@@ -1,0 +1,220 @@
+name: Enterprise Demo Setup Workflow
+
+on: 
+  schedule:
+    - cron: '33 8 1 * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Manual Build'  
+
+env:
+  ANCHORECTL_USERNAME: ${{ secrets.ANCHORECTL_USERNAME }}
+  ANCHORECTL_PASSWORD: ${{ secrets.ANCHORECTL_PASSWORD }}
+  ANCHORECTL_URL: ${{ secrets.ANCHORECTL_URL }}
+  IMAGE_REGISTRY: ghcr.io
+  IMAGE_TAG: demo
+  ### if you want to gate on policy failures, set this to "true"
+  ### since this particular workflow is specifically for setting up a demo, 
+  ### we don't want this to be true.
+  ANCHORE_FAIL_ON_POLICY: false
+
+jobs:
+
+  Baseline-Build-Push:
+    runs-on: ubuntu-latest
+    steps:
+    
+    - name: "Set environmental variables"
+      run: |
+        echo "IMAGE=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${IMAGE_TAG}-${GITHUB_REF_NAME}" >> $GITHUB_ENV
+        
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      
+    - name: Login to Image Registry
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${IMAGE_REGISTRY} -u ${GITHUB_ACTOR} --password-stdin
+      
+    - name: Build Baseline Docker Image
+      run: |
+        docker build . --no-cache --pull --file .baseline/Dockerfile-baseline --tag ${IMAGE}
+        
+    - name: Push Baseline Docker Image
+      run: |
+        docker push ${IMAGE}
+        
+        
+  Baseline-Scan:  
+    needs: Baseline-Build-Push  
+    runs-on: ubuntu-latest
+    steps:
+    
+    - name: "Set environmental variables"
+      run: |
+        echo "IMAGE=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${IMAGE_TAG}-${GITHUB_REF_NAME}" >> $GITHUB_ENV
+        
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      
+    - name: Install CLI Tools
+      run: |
+        ### install syft (for local SPDX/CycloneDX sbom generation, this will be implemented directly in anchorctl in the future as well)
+        #curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+        ### install anchorectl 
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin
+        chmod 0755 $HOME/.local/bin/anchorectl
+        export PATH="$HOME/.local/bin/:$PATH"
+    
+    ### this isn't really necessary (we'll bomb out on the next step anyway if the API isn't reachable), but is useful for debugging 
+    #- name: Verify Anchore Ready and Reachable
+    #  run: |
+    #    anchorectl system wait --timeout 10
+    #    anchorectl system status
+    
+    - name: Add Baseline Image to Enterprise Queue
+      run: | 
+        anchorectl image add --force --no-auto-subscribe --wait --annotation build_tool=github --annotation build=baseline --annotation actor=${GITHUB_ACTOR} --dockerfile .baseline/Dockerfile-baseline ${IMAGE}
+        
+    ### this isn't really necessary, some people want to archive this stuff
+    #- name: Pull vulnerability assessment
+    #  run: |
+    #    anchorectl image vuln ${IMAGE_DEV} 
+    #    ### if you want to keep a copy of the vuln assessment as a build artifact:
+    #    # anchorectl image vuln ${IMAGE_DEV} | tee anchore-vuln.txt
+    #- name: Pull policy evaluation
+    #  run: |      
+    #    ### If ANCHORE_FAIL_ON_POLICY is set, break the pipeline if there is a policy violation
+    #    set -o pipefail
+    #    if [ "$ANCHORE_FAIL_ON_POLICY" == "true" ] ; then 
+    #      anchorectl image check --detail --fail-based-on-results ${IMAGE_DEV} ; 
+    #    else 
+    #      anchorectl image check --detail ${IMAGE_DEV} ; 
+    #    fi    
+    #    ### again, if you want to keep an artifact of the policy evaluation, just pipe the image check output to "tee anchore-policy.txt" or similar
+        
+        
+  Iteration-Build-Push:  
+    needs: Baseline-Build-Push  
+    runs-on: ubuntu-latest
+    steps:
+    
+    - name: "Set environmental variables"
+      run: |
+        echo "IMAGE=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${IMAGE_TAG}-${GITHUB_REF_NAME}" >> $GITHUB_ENV
+        
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      
+    - name: Login to Image Registry
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${IMAGE_REGISTRY} -u ${GITHUB_ACTOR} --password-stdin
+      
+    - name: Build Iterated Docker Image
+      run: |
+        docker build . --no-cache --pull --file Dockerfile --tag ${IMAGE}
+        
+    - name: Push Iterated Docker Image
+      run: |
+        docker push ${IMAGE}
+        
+    ### below steps are only needed if you want a local SBOM in SPDX or CycloneDX format
+    #
+    #- name: Install CLI Tools
+    #  run: |
+    #    ### if we want local sboms in SPDX/CycloneDX, we need syft (for now)
+    #    curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+    #
+    #- name: Generate SBOM 
+    #  run: |
+    #    syft -o spdx-json docker:${IMAGE} > sbom.spdx.json
+    #    syft -o cyclonedx-json docker:${IMAGE} > sbom.cdx.json
+    #      
+    #- name: Archive SPDX
+    #  if: always()
+    #  uses: actions/upload-artifact@v2
+    #  with:
+    #    name: spdx-sbom
+    #    path: sbom.spdx.json
+    #    retention-days: 14
+    #- name: Archive CycloneDX
+    #  if: always()
+    #  uses: actions/upload-artifact@v2
+    #  with:
+    #    name: cdx-sbom
+    #    path: sbom.cdx.json
+    #    retention-days: 14  
+        
+        
+  Iteration-Scan:  
+    needs: [Baseline-Scan, Iteration-Build-Push]
+    runs-on: ubuntu-latest
+    steps:
+    
+    - name: "Set environmental variables"
+      run: |
+        echo "IMAGE=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${IMAGE_TAG}-${GITHUB_REF_NAME}" >> $GITHUB_ENV
+        
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      
+    - name: Install CLI Tools
+      run: |
+        ### install syft (for local SPDX/CycloneDX sbom generation, this will be implemented directly in anchorctl in the future as well)
+        #curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+        ### install anchorectl 
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin
+        chmod 0755 $HOME/.local/bin/anchorectl
+        export PATH="$HOME/.local/bin/:$PATH"
+        
+    - name: Add Iterated Image to Enterprise Queue
+      run: | 
+        anchorectl image add --force --no-auto-subscribe --wait --annotation build_tool=github --annotation build=iterated --annotation actor=${GITHUB_ACTOR} --dockerfile ./Dockerfile ${IMAGE}
+  Post-Scan-Tasks:  
+    needs: [Baseline-Scan, Iteration-Scan]
+    runs-on: ubuntu-latest
+    steps:
+    - name: "Set environmental variables"
+      run: |
+        echo "IMAGE=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${IMAGE_TAG}-${GITHUB_REF_NAME}" >> $GITHUB_ENV
+        
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      
+    - name: Install CLI Tools
+      run: |
+        ### install syft (for local SPDX/CycloneDX sbom generation, this will be implemented directly in anchorctl in the future as well)
+        #curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+        ### install anchorectl 
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin
+        chmod 0755 $HOME/.local/bin/anchorectl
+        export PATH="$HOME/.local/bin/:$PATH"
+    ### this isn't really necessary, some people want to archive this stuff
+    - name: Pull Vulnerability List
+      run: |
+        anchorectl image vuln ${IMAGE} all | tee anchore-vuln.txt
+        
+    ### optional, pull policy evaluation    
+    - name: Pull Policy Evaluation
+      run: |
+        anchorectl image check --detail ${IMAGE} | tee anchore-policy.txt
+    #
+    ### if we want to gate on policy evaluation, we can do something like this:
+    ### we have to set pipefail so that we can still gate on the evaluation, otherwise piping into tee will mask the failure
+    #- name: Pull Policy Evaluation
+    #  run: |
+    #    set -o pipefail
+    #    anchorectl image check --fail-based-on-results --detail ${IMAGE} | tee anchore-policy.txt
+
+    ### optional, if you want continuous re-evaluations
+    ### still need anchore-cli for subscription operations (not yet in anchorectl 0.2.0)
+    #- name: Activate Subscriptions
+    #  run: |
+    #    anchorectl -o json subscription list -k ${IMAGE} | jq -r '.[] | select (.subscriptionType == "policy_eval") | .subscriptionId' | xargs anchorectl subscription activate
+    #    anchorectl -o json subscription list -k ${IMAGE} | jq -r '.[] | select (.subscriptionType == "vuln_update") | .subscriptionId' | xargs anchorectl subscription activate
+
+    - name: Archive Reports
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: evaluation-report
+        path: anchore-*.txt
+        retention-days: 14
