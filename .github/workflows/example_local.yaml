@@ -13,8 +13,8 @@
 name: Example Local Scan/SBOM Workflow
 
 on: 
-  schedule:
-    - cron: '52 14 * * 1'
+  #schedule:
+  #  - cron: '52 14 * * 1'
   #push:
   #  branches:
   #    - main
