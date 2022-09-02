@@ -1,5 +1,8 @@
 # 2022-09-enterprise-demo
 
+[![Example Enterprise Workflow](https://github.com/pvnovarese/2022-09-enterprise-demo/actions/workflows/example_enterprise.yaml/badge.svg)](https://github.com/pvnovarese/2022-09-enterprise-demo/actions/workflows/example_enterprise.yaml)
+[![Example Local Scan/SBOM Workflow](https://github.com/pvnovarese/2022-09-enterprise-demo/actions/workflows/example_local.yaml/badge.svg)](https://github.com/pvnovarese/2022-09-enterprise-demo/actions/workflows/example_local.yaml)
+
 Simple demo for Anchore Enterprise.
 
 Includes workflow examples for Jenkins, CircleCI, Codefresh, Drone, and GitHub.
