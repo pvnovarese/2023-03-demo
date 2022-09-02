@@ -6,8 +6,8 @@
 name: Example Enterprise Workflow
 
 on: 
-  schedule:
-    - cron: '07 15 * * 1'
+  #schedule:
+  #  - cron: '07 15 * * 1'
   workflow_dispatch:
     inputs:
       mode:
