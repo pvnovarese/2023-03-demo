@@ -1,0 +1,155 @@
+## This workflow is an example of scanning locally in the build
+## environment, then pushing the sbom to the Anchore Enterprise
+## API rather than pushing an image and having the Anchore
+## backend analyzers do the scanning.  Most people should use
+## the "example enterprise workflow" instead.
+##
+## todo list:
+## 1) (possibly) use my own anchore-tools iamge instead of ubuntu 
+##    plus installing anchorectl
+## 2) break this into multiple jobs (need to figure out how to build an image in one job
+##    and use it in a 2nd job without pushing it anywhere
+
+name: Example Local Scan/SBOM Workflow
+
+on: 
+  schedule:
+    - cron: '52 14 * * 1'
+  #push:
+  #  branches:
+  #    - main
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Manual Build'  
+
+env:
+  ANCHORECTL_USERNAME: ${{ secrets.ANCHORECTL_USERNAME }}
+  ANCHORECTL_PASSWORD: ${{ secrets.ANCHORECTL_PASSWORD }}
+  ANCHORECTL_URL: ${{ secrets.ANCHORECTL_URL }}
+  IMAGE_REGISTRY: ghcr.io
+  ### if you want to gate on policy failures, set this to "true"
+  ANCHORE_FAIL_ON_POLICY: false
+        
+
+
+jobs:
+
+  Build-Scan-Promote:
+    runs-on: ubuntu-latest
+    steps:
+    
+    # we'll use the tag with the SHA for testing, once we are satisfied we'll use the tag with the
+    # branch name and then actually push that to the registry (the SHA tag never gets pushed)
+    - name: "Set environmental variables"
+      run: |
+        echo "IMAGE_SHA=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:gh-anchorectl-${GITHUB_SHA}" >> $GITHUB_ENV
+        echo "IMAGE=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:gh-anchorectl-${GITHUB_REF_NAME}" >> $GITHUB_ENV
+        echo "REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+        
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      
+    - name: Build Docker Image
+      run: |
+        docker build . --file Dockerfile --tag ${IMAGE_SHA}      
+                
+    - name: Install anchorectl CLI Tool
+      run: |
+        mkdir -p $HOME/.local/bin
+        ### we need syft if we're going to generate sbom locally
+        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b $HOME/.local/bin
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin
+        chmod 0755 $HOME/.local/bin/anchorectl
+        export PATH="$HOME/.local/bin/:$PATH"
+    
+    ### this isn't really necessary (we'll bomb out on the next step anyway if the API isn't reachable), but is useful for debugging 
+    #- name: Verify Anchore Ready and Reachable
+    #  run: |
+    #    anchorectl system wait --timeout 10
+    #    anchorectl system status
+        
+    - name: Generate SBOM and Push to Anchore
+      run: |
+        syft -o json packages ${IMAGE_SHA} | tee ${REPOSITORY_NAME}-sbom.json | anchorectl image add --wait --dockerfile ./Dockerfile ${IMAGE_SHA} --from -
+        ### if you want to also keep a copy of the sbom (syft/anchore native format) locally as a build artifact, something like this:
+        # syft -o json packages ${IMAGE_SHA} | tee ${REPOSITORY_NAME}-sbom.json | anchorectl image add...
+        ### advanced, generate the local sbom in spdx or cyclone dx format 
+        # syft -o json -o spdx-json=./${REPOSITORY_NAME}.spdx.json -o cyclonedx-json=./${REPOSITORY_NAME}.cyclonedx.json packages ${IMAGE_SHA} | anchorectl image add ...
+        ###
+        ### this last bit is just to correct for a bug in anchorectl 1.0.0,
+        ### even though we use --no-auto-subscribe in the image add above, it 
+        ### doesn't seem to work as expected when uploading a sbom (as opposed
+        ### to just passing an image name/location to the API to be scanned
+        ### in the backend analyzer processes)
+        anchorectl subscription list | grep ${IMAGE_SHA} ### debugging
+        anchorectl subscription deactivate ${IMAGE_SHA} tag_update
+        anchorectl subscription list | grep ${IMAGE_SHA} ### debugging
+        
+    ### this isn't really necessary, some people want to archive this stuff
+    #- name: Pull Vulnerability List
+    #  run: |
+    #    anchorectl image vuln ${IMAGE_SHA} 
+    #    ### if you want to archive the vuln assessment, do this instead:
+    #    # anchorectl image vuln ${IMAGE_SHA} | tee anchore-vuln.txt
+
+        
+    - name: Check Policy Evaluation
+      run: |      
+        ### If ANCHORE_FAIL_ON_POLICY is set, break the pipeline if there is a policy violation
+        set -o pipefail
+        if [ "$ANCHORE_FAIL_ON_POLICY" == "true" ] ; then 
+          anchorectl image check --detail --fail-based-on-results ${IMAGE_SHA} ; 
+        else 
+          anchorectl image check --detail ${IMAGE_SHA} ; 
+        fi    
+        ### if you want to archive a copy of the policy evaluation, you 
+        ### do something like pipe the output of these anchorectl commands
+        ### to anchore-policy.txt or similar.
+
+        
+    
+    ### policy evaluation could be used as a gate, or insert whatever other logic you want before this point,
+    ### up to now, the image hasn't been pushed anywhere, now we're going to "promote" it and push to registry
+    
+    - name: Re-Tag Image
+      run: |
+        docker tag ${IMAGE_SHA} ${IMAGE}
+        
+    - name: Login to ghcr.io
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${GITHUB_ACTOR} --password-stdin
+      
+    - name: Push Docker Image
+      run: |
+        docker push ${IMAGE}
+        
+    - name: Add Promoted Image to Anchore Queue
+      run: |
+        anchorectl image add --force --no-auto-subscribe --dockerfile Dockerfile ${IMAGE}
+        ### if we're going to do anything with subscriptions, we should add --wait to this anchorectl command
+        ### otherwise, we can just queue it up and move on
+
+    ### if you want to clean up, you need anchore-cli for now since subscription operations are 
+    ### also not implemented in anchorectl yet as of v0.2.0
+    #- name: Purge Unneeded Evaluation
+    #  run: |
+    #    anchore-cli subscription list --full | grep ${GITHUB_SHA} | awk '{print $4}' | xargs -n 1 anchore-cli subscription del
+    #    anchorectl image delete ${IMAGE_SHA}
+    
+    ## optional, if you want continuous re-evaluations
+    ## still need anchore-cli for subscription operations
+    #- name: Activate Subscriptions
+    #    anchore-cli subscription activate policy_eval ${IMAGE}
+    #    anchore-cli subscription activate vuln_update ${IMAGE}    
+     
+    ### example of archiving policy/vuln assessments
+    #
+    #- name: Archive Vulnerabilities and Evaluation
+    #  if: always()
+    #  uses: actions/upload-artifact@v2
+    #  with:
+    #    name: evaluation-report
+    #    path: anchore-*.txt
+    #    retention-days: 14
+    #        
+    ### if you created a local copy of the sbom then you should also add an archive/upload step here 

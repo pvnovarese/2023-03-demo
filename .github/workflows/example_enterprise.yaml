@@ -1,0 +1,149 @@
+# ANCHORE ENTERPRISE EXAMPLE WORKFLOW
+# pvn@anchore.com
+# This workflow checks out code, builds an image, performs a container image
+# scan, evaluates the image, and promotes it if it passes.
+
+name: Example Enterprise Workflow
+
+on: 
+  schedule:
+    - cron: '07 15 * * 1'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Manual Build'  
+
+env:
+  ANCHORECTL_USERNAME: ${{ secrets.ANCHORECTL_USERNAME }}
+  ANCHORECTL_PASSWORD: ${{ secrets.ANCHORECTL_PASSWORD }}
+  ANCHORECTL_URL: ${{ secrets.ANCHORECTL_URL }}
+  IMAGE_REGISTRY: ghcr.io
+  ### if you want to gate on policy, change this to "true"
+  ANCHORE_FAIL_ON_POLICY: false
+
+jobs:
+
+  Build-Push:
+    runs-on: ubuntu-latest
+    steps:
+    
+    - name: "Set environmental variables"
+      run: |
+        echo "IMAGE_TEST=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}-test" >> $GITHUB_ENV
+        echo "IMAGE_PROD=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV
+
+        
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      
+    - name: Login to Image Registry
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${IMAGE_REGISTRY} -u ${GITHUB_ACTOR} --password-stdin
+      
+    - name: Build Docker Image
+      run: |
+        docker build . --no-cache --pull --file Dockerfile --tag ${IMAGE_TEST}
+        
+    - name: Push Docker Image
+      run: |
+        docker push ${IMAGE_TEST}
+        
+        
+  Scan-Evaluate:  
+    needs: Build-Push  
+    runs-on: ubuntu-latest
+    steps:
+    
+    - name: "Set environmental variables"
+      run: |
+        echo "IMAGE_TEST=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}-test" >> $GITHUB_ENV
+        echo "IMAGE_PROD=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV
+        
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      
+    - name: Install CLI Tools
+      run: |
+        ### install anchorectl 
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin
+        chmod 0755 $HOME/.local/bin/anchorectl
+        export PATH="$HOME/.local/bin/:$PATH"
+    
+    ### this isn't really necessary (we'll bomb out on the next step anyway if the API isn't reachable), but is useful for debugging 
+    #- name: Verify Anchore Ready and Reachable
+    #  run: |
+    #    anchorectl system wait --timeout 10
+    #    anchorectl system status
+    
+    - name: Add Image to Enterprise Queue
+      run: | 
+        anchorectl image add --force --no-auto-subscribe --wait --annotation build_tool=github --annotation actor=${GITHUB_ACTOR} --dockerfile Dockerfile ${IMAGE_TEST}
+        
+    ### this isn't really necessary, some people want to archive this stuff
+    #- name: Pull vulnerability assessment
+    #  run: |
+    #    anchorectl image vuln ${IMAGE} 
+    #    ### if you want to keep a copy of the vuln assessment as a build artifact:
+    #    # anchorectl image vuln ${IMAGE} | tee anchore-vuln.txt
+    
+    - name: Pull policy evaluation
+      run: |      
+        ### If ANCHORE_FAIL_ON_POLICY is set, break the pipeline if there is a policy violation
+        set -o pipefail
+        if [ "$ANCHORE_FAIL_ON_POLICY" == "true" ] ; then 
+          anchorectl image check --detail --fail-based-on-results ${IMAGE_TEST} ; 
+        else 
+          anchorectl image check --detail ${IMAGE_TEST} ; 
+        fi    
+        ### again, if you want to keep an artifact of the policy evaluation, just pipe the image check output to "tee anchore-policy.txt" or similar
+        
+        
+
+  Promote-Deploy:  
+    needs: Scan-Evaluate
+    runs-on: ubuntu-latest
+    steps:
+    - name: "Set environmental variables"
+      run: |
+        echo "IMAGE_TEST=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}-test" >> $GITHUB_ENV
+        echo "IMAGE_PROD=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV
+        
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      
+    - name: Install CLI Tools
+      run: |
+        ### install anchorectl 
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin
+        chmod 0755 $HOME/.local/bin/anchorectl
+        export PATH="$HOME/.local/bin/:$PATH"
+
+    - name: Promote image (re-tag, login to ghcr,io, push)
+      run: |
+        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${GITHUB_ACTOR} --password-stdin
+        docker pull ${IMAGE_TEST}
+        docker tag ${IMAGE_TEST} ${IMAGE_PROD}
+        docker push ${IMAGE_PROD}
+        
+    - name: Add promoted image to Anchore queue
+      run: |
+        anchorectl image add --force --no-auto-subscribe --dockerfile Dockerfile --annotation build_tool=github --annotation actor=${GITHUB_ACTOR} ${IMAGE_PROD}
+        ### if we're going to do anything with subscriptions, we should add --wait to this anchorectl command
+        ### otherwise, we can just queue it up and move on
+
+    ### optional, if you want continuous re-evaluations
+    #
+    #- name: Activate Subscriptions
+    #  run: |
+    #    anchorectl subscription activate ${IMAGE_PROD} policy_eval
+    #    anchorectl subscription activate ${IMAGE_PROD} vuln_update
+
+    ### if you want to keep vuln/policy assessments as an artifact, make sure you piped the above output to a file
+    ### and then uncomment this:
+    #
+    #- name: Archive Reports
+    #  if: always()
+    #  uses: actions/upload-artifact@v2
+    #  with:
+    #    name: evaluation-report
+    #    path: anchore-*.txt
+    #    retention-days: 14
