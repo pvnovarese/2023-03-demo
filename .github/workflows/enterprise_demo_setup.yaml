@@ -1,8 +1,8 @@
 name: Enterprise Demo Setup Workflow
 
 on: 
-  schedule:
-    - cron: '33 8 1 * *'
+  #schedule:
+  #  - cron: '33 8 1 * *'
   workflow_dispatch:
     inputs:
       mode:
