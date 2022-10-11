@@ -81,9 +81,9 @@ jobs:
     ### this isn't really necessary, some people want to archive this stuff
     #- name: Pull vulnerability assessment
     #  run: |
-    #    anchorectl image vuln ${IMAGE} 
+    #    anchorectl image vulnerabilities ${IMAGE} 
     #    ### if you want to keep a copy of the vuln assessment as a build artifact:
-    #    # anchorectl image vuln ${IMAGE} | tee anchore-vuln.txt
+    #    # anchorectl image vulnerabilities ${IMAGE} | tee anchore-vuln.txt
     
     - name: Pull policy evaluation
       run: |      
