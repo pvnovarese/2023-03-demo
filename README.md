@@ -3,6 +3,8 @@
 [![Enterprise Demo Setup Workflow](https://github.com/pvnovarese/2023-01-enterprise-demo/actions/workflows/enterprise_demo_setup.yaml/badge.svg)](https://github.com/pvnovarese/2023-01-enterprise-demo/actions/workflows/enterprise_demo_setup.yaml)
 [![Example Enterprise Workflow](https://github.com/pvnovarese/2023-01-enterprise-demo/actions/workflows/example_enterprise.yaml/badge.svg)](https://github.com/pvnovarese/2023-01-enterprise-demo/actions/workflows/example_enterprise.yaml)
 [![Example Local Scan/SBOM Workflow](https://github.com/pvnovarese/2023-01-enterprise-demo/actions/workflows/example_local.yaml/badge.svg)](https://github.com/pvnovarese/2023-01-enterprise-demo/actions/workflows/example_local.yaml)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/pvnovarese/2023-01-enterprise-demo/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/pvnovarese/2023-01-enterprise-demo/tree/main)
+
 
 Simple demo for Anchore Enterprise.
 
