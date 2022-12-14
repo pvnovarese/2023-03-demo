@@ -34,7 +34,7 @@ jobs:
 
         
     - name: Checkout Code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       
     - name: Login to Image Registry
       run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${IMAGE_REGISTRY} -u ${GITHUB_ACTOR} --password-stdin
@@ -59,7 +59,7 @@ jobs:
         echo "IMAGE_PROD=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV
         
     - name: Checkout Code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       
     - name: Install CLI Tools
       run: |
@@ -114,7 +114,7 @@ jobs:
         echo "IMAGE_PROD=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}" >> $GITHUB_ENV
         
     - name: Checkout Code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       
     - name: Install CLI Tools
       run: |
@@ -147,7 +147,7 @@ jobs:
     #
     #- name: Archive Reports
     #  if: always()
-    #  uses: actions/upload-artifact@v2
+    #  uses: actions/upload-artifact@v3
     #  with:
     #    name: evaluation-report
     #    path: anchore-*.txt
