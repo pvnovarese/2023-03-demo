@@ -48,7 +48,7 @@ jobs:
         echo "REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
         
     - name: Checkout Code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       
     - name: Build Docker Image
       run: |
@@ -151,7 +151,7 @@ jobs:
     #
     #- name: Archive Vulnerabilities and Evaluation
     #  if: always()
-    #  uses: actions/upload-artifact@v2
+    #  uses: actions/upload-artifact@v3
     #  with:
     #    name: evaluation-report
     #    path: anchore-*.txt
