@@ -61,8 +61,7 @@ jobs:
         ### install syft (for local SPDX/CycloneDX sbom generation, this will be implemented directly in anchorctl in the future as well)
         #curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
         ### install anchorectl 
-        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin
-        chmod 0755 $HOME/.local/bin/anchorectl
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.2.0
         export PATH="$HOME/.local/bin/:$PATH"
     
     ### this isn't really necessary (we'll bomb out on the next step anyway if the API isn't reachable), but is useful for debugging 
@@ -161,13 +160,13 @@ jobs:
         ### install syft (for local SPDX/CycloneDX sbom generation, this will be implemented directly in anchorctl in the future as well)
         #curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
         ### install anchorectl 
-        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin
-        chmod 0755 $HOME/.local/bin/anchorectl
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.2.0
         export PATH="$HOME/.local/bin/:$PATH"
         
     - name: Add Iterated Image to Enterprise Queue
       run: | 
         anchorectl image add --force --no-auto-subscribe --wait --annotation build_tool=github --annotation build=iterated --annotation actor=${GITHUB_ACTOR} --dockerfile ./Dockerfile ${IMAGE}
+        
   Post-Scan-Tasks:  
     needs: [Baseline-Scan, Iteration-Scan]
     runs-on: ubuntu-latest
@@ -187,15 +186,16 @@ jobs:
         curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin
         chmod 0755 $HOME/.local/bin/anchorectl
         export PATH="$HOME/.local/bin/:$PATH"
-    ### this isn't really necessary, some people want to archive this stuff
-    - name: Pull Vulnerability List
-      run: |
-        anchorectl image vuln ${IMAGE} all | tee anchore-vuln.txt
         
+    ### this isn't really necessary, some people want to archive this stuff
+    #- name: Pull Vulnerability List
+    #  run: |
+    #    anchorectl image vuln ${IMAGE} all | tee anchore-vuln.txt
+    #    
     ### optional, pull policy evaluation    
-    - name: Pull Policy Evaluation
-      run: |
-        anchorectl image check --detail ${IMAGE} | tee anchore-policy.txt
+    #- name: Pull Policy Evaluation
+    #  run: |
+    #    anchorectl image check --detail ${IMAGE} | tee anchore-policy.txt
     #
     ### if we want to gate on policy evaluation, we can do something like this:
     ### we have to set pipefail so that we can still gate on the evaluation, otherwise piping into tee will mask the failure
@@ -211,10 +211,11 @@ jobs:
     #    anchorectl -o json subscription list -k ${IMAGE} | jq -r '.[] | select (.subscriptionType == "policy_eval") | .subscriptionId' | xargs anchorectl subscription activate
     #    anchorectl -o json subscription list -k ${IMAGE} | jq -r '.[] | select (.subscriptionType == "vuln_update") | .subscriptionId' | xargs anchorectl subscription activate
 
-    - name: Archive Reports
-      if: always()
-      uses: actions/upload-artifact@v2
-      with:
-        name: evaluation-report
-        path: anchore-*.txt
-        retention-days: 14
+    ### if you pulled vuln/policy reports and want to archive them:
+    #- name: Archive Reports
+    #  if: always()
+    #  uses: actions/upload-artifact@v2
+    #  with:
+    #    name: evaluation-report
+    #    path: anchore-*.txt
+    #    retention-days: 14
