@@ -64,8 +64,7 @@ jobs:
     - name: Install CLI Tools
       run: |
         ### install anchorectl 
-        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin
-        chmod 0755 $HOME/.local/bin/anchorectl
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.2.0
         export PATH="$HOME/.local/bin/:$PATH"
     
     ### this isn't really necessary (we'll bomb out on the next step anyway if the API isn't reachable), but is useful for debugging 
@@ -75,8 +74,14 @@ jobs:
     #    anchorectl system status
     
     - name: Add Image to Enterprise Queue
+      ###
+      ### IMPORTANT
+      ### IF you want to get vuln or policy evaluation, you MUST add --wait to this command
+      ### if not, leave it out and save yourself some time
+      ###
       run: | 
-        anchorectl image add --force --no-auto-subscribe --wait --annotation build_tool=github --annotation actor=${GITHUB_ACTOR} --dockerfile Dockerfile ${IMAGE_TEST}
+        anchorectl image add --force --no-auto-subscribe --annotation build_tool=github --annotation actor=${GITHUB_ACTOR} --dockerfile Dockerfile ${IMAGE_TEST}
+
         
     ### this isn't really necessary, some people want to archive this stuff
     #- name: Pull vulnerability assessment
@@ -85,16 +90,17 @@ jobs:
     #    ### if you want to keep a copy of the vuln assessment as a build artifact:
     #    # anchorectl image vulnerabilities ${IMAGE} | tee anchore-vuln.txt
     
-    - name: Pull policy evaluation
-      run: |      
-        ### If ANCHORE_FAIL_ON_POLICY is set, break the pipeline if there is a policy violation
-        set -o pipefail
-        if [ "$ANCHORE_FAIL_ON_POLICY" == "true" ] ; then 
-          anchorectl image check --detail --fail-based-on-results ${IMAGE_TEST} ; 
-        else 
-          anchorectl image check --detail ${IMAGE_TEST} ; 
-        fi    
-        ### again, if you want to keep an artifact of the policy evaluation, just pipe the image check output to "tee anchore-policy.txt" or similar
+    ### this isn't necessary unless you want to archive policy eval or break the pipeline on a violation
+    #- name: Pull policy evaluation
+    #  run: |      
+    #    ### If ANCHORE_FAIL_ON_POLICY is set, break the pipeline if there is a policy violation
+    #    set -o pipefail
+    #    if [ "$ANCHORE_FAIL_ON_POLICY" == "true" ] ; then 
+    #      anchorectl image check --detail --fail-based-on-results ${IMAGE_TEST} ; 
+    #    else 
+    #      anchorectl image check --detail ${IMAGE_TEST} ; 
+    #    fi    
+    #    ### again, if you want to keep an artifact of the policy evaluation, just pipe the image check output to "tee anchore-policy.txt" or similar
         
         
 
@@ -113,8 +119,7 @@ jobs:
     - name: Install CLI Tools
       run: |
         ### install anchorectl 
-        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin
-        chmod 0755 $HOME/.local/bin/anchorectl
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.2.0
         export PATH="$HOME/.local/bin/:$PATH"
 
     - name: Promote image (re-tag, login to ghcr,io, push)
