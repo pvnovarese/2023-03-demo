@@ -57,10 +57,9 @@ jobs:
     - name: Install anchorectl CLI Tool
       run: |
         mkdir -p $HOME/.local/bin
-        ### we need syft if we're going to generate sbom locally
-        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b $HOME/.local/bin
-        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin
-        chmod 0755 $HOME/.local/bin/anchorectl
+        ### we still need syft if we're going to generate sbom locally (as of anchorectl 1.2.0)
+        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b $HOME/.local/bin v0.60.3
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.2.0 
         export PATH="$HOME/.local/bin/:$PATH"
     
     ### this isn't really necessary (we'll bomb out on the next step anyway if the API isn't reachable), but is useful for debugging 
@@ -93,22 +92,21 @@ jobs:
     #    ### if you want to archive the vuln assessment, do this instead:
     #    # anchorectl image vuln ${IMAGE_SHA} | tee anchore-vuln.txt
 
-        
-    - name: Check Policy Evaluation
-      run: |      
-        ### If ANCHORE_FAIL_ON_POLICY is set, break the pipeline if there is a policy violation
-        set -o pipefail
-        if [ "$ANCHORE_FAIL_ON_POLICY" == "true" ] ; then 
-          anchorectl image check --detail --fail-based-on-results ${IMAGE_SHA} ; 
-        else 
-          anchorectl image check --detail ${IMAGE_SHA} ; 
-        fi    
-        ### if you want to archive a copy of the policy evaluation, you 
-        ### do something like pipe the output of these anchorectl commands
-        ### to anchore-policy.txt or similar.
-
-        
-    
+    ### this isn't necessary unless you want to break the pipeline if a policy violation is found    
+    #- name: Check Policy Evaluation
+    #  run: |      
+    #    ### If ANCHORE_FAIL_ON_POLICY is set, break the pipeline if there is a policy violation
+    #    set -o pipefail
+    #    if [ "$ANCHORE_FAIL_ON_POLICY" == "true" ] ; then 
+    #      anchorectl image check --detail --fail-based-on-results ${IMAGE_SHA} ; 
+    #    else 
+    #      anchorectl image check --detail ${IMAGE_SHA} ; 
+    #    fi    
+    #    ### if you want to archive a copy of the policy evaluation, you 
+    #    ### do something like pipe the output of these anchorectl commands
+    #    ### to anchore-policy.txt or similar.
+    #
+    #
     ### policy evaluation could be used as a gate, or insert whatever other logic you want before this point,
     ### up to now, the image hasn't been pushed anywhere, now we're going to "promote" it and push to registry
     
@@ -129,6 +127,13 @@ jobs:
         ### if we're going to do anything with subscriptions, we should add --wait to this anchorectl command
         ### otherwise, we can just queue it up and move on
 
+
+    ###
+    ###
+    ###  everything below here needs to be re-written now that anchorectl can do (most of) this stuff)
+    ###
+    ###
+    
     ### if you want to clean up, you need anchore-cli for now since subscription operations are 
     ### also not implemented in anchorectl yet as of v0.2.0
     #- name: Purge Unneeded Evaluation
