@@ -1,6 +1,6 @@
 FROM xmrig/xmrig:latest AS xmrig
 
-FROM docker.io/redhat/ubi8-minimal:latest
+FROM docker.io/pvnovarese/ubi8-minimal:latest
 
 LABEL maintainer="pvn@novarese.net"
 LABEL name="2023-01-enterprise-demo"
