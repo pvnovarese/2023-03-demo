@@ -1,10 +1,10 @@
 FROM xmrig/xmrig:latest AS xmrig
 
-FROM docker.io/pvnovarese/ubi8-minimal:latest
+FROM docker.io/redhat/ubi8-minimal:latest
 
 LABEL maintainer="pvn@novarese.net"
-LABEL name="2023-01-enterprise-demo"
-LABEL org.opencontainers.image.title="2023-01-enterprise-demo"
+LABEL name="2023-02-demo"
+LABEL org.opencontainers.image.title="2023-02-demo"
 LABEL org.opencontainers.image.description="Simple image to test various policy rules with Anchore Enterprise."
 
 HEALTHCHECK --timeout=10s CMD /bin/true || exit 1
