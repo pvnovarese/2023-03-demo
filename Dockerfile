@@ -33,8 +33,8 @@ RUN set -ex && \
 ##    rm -rf /sudo-1.8.29-5.el8.x86_64.rpm && \
 
 ## just to make sure we have a unique build each time
-RUN date > /image_build_timestamp && \
-    touch image_build_timestamp_$(date +%Y-%m-%d_%T)
+#RUN date > /image_build_timestamp && \
+#    touch image_build_timestamp_$(date +%Y-%m-%d_%T)
 
 USER mining
 WORKDIR /xmrig
