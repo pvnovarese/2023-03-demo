@@ -58,8 +58,8 @@ jobs:
       run: |
         mkdir -p $HOME/.local/bin
         ### we still need syft if we're going to generate sbom locally (as of anchorectl 1.2.0)
-        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b $HOME/.local/bin v0.59.0
-        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.2.0 
+        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b $HOME/.local/bin 
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin  
         export PATH="$HOME/.local/bin/:$PATH"
     
     ### this isn't really necessary (we'll bomb out on the next step anyway if the API isn't reachable), but is useful for debugging 
