@@ -70,20 +70,20 @@ jobs:
         
     - name: Generate SBOM and Push to Anchore
       run: |
-        syft -o json packages ${IMAGE_SHA} | anchorectl image add --wait --dockerfile ./Dockerfile ${IMAGE_SHA} --from -
+        #syft -o json packages ${IMAGE_SHA} | anchorectl image add --wait --dockerfile ./Dockerfile ${IMAGE_SHA} --from -
         ### if you want to also keep a copy of the sbom (syft/anchore native format) locally as a build artifact, something like this:
         # syft -o json packages ${IMAGE_SHA} | tee ${REPOSITORY_NAME}-sbom.json | anchorectl image add --wait --dockerfile ./Dockerfile ${IMAGE_SHA} --from -
         ### advanced, generate the local sbom in spdx or cyclone dx format 
-        # syft -o json -o spdx-json=./${REPOSITORY_NAME}.spdx.json -o cyclonedx-json=./${REPOSITORY_NAME}.cyclonedx.json packages ${IMAGE_SHA} | anchorectl image add ...
+        syft -o json -o spdx-json=./${REPOSITORY_NAME}.spdx.json -o cyclonedx-json=./${REPOSITORY_NAME}.cyclonedx.json packages ${IMAGE_SHA} | anchorectl image add --wait --dockerfile ./Dockerfile ${IMAGE_SHA} --from -
         ###
         ### this last bit is just to correct for a bug in anchorectl 1.0.0,
         ### even though we use --no-auto-subscribe in the image add above, it 
         ### doesn't seem to work as expected when uploading a sbom (as opposed
         ### to just passing an image name/location to the API to be scanned
         ### in the backend analyzer processes)
-        anchorectl subscription list | grep ${IMAGE_SHA} ### debugging
-        anchorectl subscription deactivate ${IMAGE_SHA} tag_update
-        anchorectl subscription list | grep ${IMAGE_SHA} ### debugging
+        #anchorectl subscription list | grep ${IMAGE_SHA} ### debugging
+        #anchorectl subscription deactivate ${IMAGE_SHA} tag_update
+        #anchorectl subscription list | grep ${IMAGE_SHA} ### debugging
         
     ### this isn't really necessary, some people want to archive this stuff
     #- name: Pull Vulnerability List
@@ -148,13 +148,13 @@ jobs:
     #    anchore-cli subscription activate vuln_update ${IMAGE}    
      
     ### example of archiving policy/vuln assessments
-    #
-    #- name: Archive Vulnerabilities and Evaluation
-    #  if: always()
-    #  uses: actions/upload-artifact@v3
-    #  with:
-    #    name: evaluation-report
-    #    path: anchore-*.txt
-    #    retention-days: 14
+    
+    - name: Archive Vulnerabilities and Evaluation
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: evaluation-report
+        path: anchore-*.txt
+        retention-days: 14
     #        
     ### if you created a local copy of the sbom then you should also add an archive/upload step here 
