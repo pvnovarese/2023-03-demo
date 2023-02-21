@@ -53,6 +53,22 @@ jobs:
     - name: Build Docker Image
       run: |
         docker build . --file Dockerfile --tag ${IMAGE_SHA}      
+
+### uncomment this section if you want to use github's code scanning alerts feature in the security tab
+#    - name: Scan Image
+#      uses: anchore/scan-action@v3
+#      id: scan
+#      with:
+#        image: ${{ env.IMAGE }}
+#        fail-build: false
+#        severity-cutoff: critical
+#        acs-report-enable: true
+#        
+#    - name: Upload Anchore Scan SARIF Report
+#      uses: github/codeql-action/upload-sarif@v2
+#      with:
+#        sarif_file: ${{ steps.scan.outputs.sarif }}
+
                 
     - name: Install anchorectl CLI Tool
       run: |
