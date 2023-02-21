@@ -74,7 +74,7 @@ jobs:
         ### if you want to also keep a copy of the sbom (syft/anchore native format) locally as a build artifact, something like this:
         # syft -o json packages ${IMAGE_SHA} | tee ${REPOSITORY_NAME}-sbom.json | anchorectl image add --wait --dockerfile ./Dockerfile ${IMAGE_SHA} --from -
         ### advanced, generate the local sbom in spdx or cyclone dx format 
-        syft -o json -o spdx-json=./${REPOSITORY_NAME}.spdx.json -o cyclonedx-json=./${REPOSITORY_NAME}.cyclonedx.json packages ${IMAGE_SHA} | anchorectl image add --wait --dockerfile ./Dockerfile ${IMAGE_SHA} --from -
+        syft -o json -o spdx-json=./sbom-${REPOSITORY_NAME}.spdx.json -o cyclonedx-json=./sbom-${REPOSITORY_NAME}.cyclonedx.json packages ${IMAGE_SHA} | anchorectl image add --wait --dockerfile ./Dockerfile ${IMAGE_SHA} --from -
         ###
         ### this last bit is just to correct for a bug in anchorectl 1.0.0,
         ### even though we use --no-auto-subscribe in the image add above, it 
@@ -153,8 +153,8 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v3
       with:
-        name: evaluation-report
-        path: anchore-*.txt
+        name: sbom
+        path: sbom-*.json
         retention-days: 14
     #        
     ### if you created a local copy of the sbom then you should also add an archive/upload step here 
