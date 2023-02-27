@@ -20,4 +20,3 @@ Partial list of conditions that can be tested with this image:
 7. added anchorectl to demonstrate automatic go module detection (new in syft 0.42.0)
 8. wide variety of ruby, node, python, java installed with different licenses
 9. build drift detection via baseline dockerfile with minimal packages/dependencies
-
