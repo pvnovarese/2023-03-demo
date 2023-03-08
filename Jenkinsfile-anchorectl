@@ -18,9 +18,9 @@ pipeline {
     //
     // and we need credentials for anchorectl
     //
-    ANCHORECTL_URL = "Anchorectl_Url"
-    ANCHORECTL_USERNAME = "Anchorectl_Username"
-    ANCHORECTL_PASSWORD = "Anchorectl_Password"
+    ANCHORECTL_URL = credentials('Anchorectl_Url')
+    ANCHORECTL_USERNAME = credentials('Anchorectl_Username')
+    ANCHORECTL_PASSWORD = credentials('Anchorectl_Password')
     //
     // if you want to gate on policy failures, set this to "true"
     //
