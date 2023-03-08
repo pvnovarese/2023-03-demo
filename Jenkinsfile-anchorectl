@@ -84,7 +84,7 @@ pipeline {
         // queueing the image and will check results later.
         //
         sh """
-          ${HOME}/.local/bin/anchorectl image add --wait --no-auto-subscribe --dockerfile ./Dockerfile ${IMAGE}
+          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --dockerfile ./Dockerfile ${IMAGE}
           #
           ### the jenkins plugin will pull the evaluation and vulnerability output and 
           ### archive them as build artifacts, if you want to do that here, use these:
