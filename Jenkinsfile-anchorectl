@@ -135,7 +135,7 @@ pipeline {
         // you could also use the plugin here to generate the human-readable report and 
         // archive the results:
         sh 'echo ${IMAGE} > anchore_images'
-        anchore name: 'anchore_images', engineRetries: '300'        
+        anchore name: 'anchore_images', engineRetries: '300', bailOnFail: 'false'    
       } // end steps
     } // end stage "clean up"
     
