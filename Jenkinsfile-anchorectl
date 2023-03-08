@@ -24,7 +24,7 @@ pipeline {
     //
     // if you want to gate on policy failures, set this to "true"
     //
-    ANCHORE_FAIL_ON_POLICY: false
+    ANCHORE_FAIL_ON_POLICY = "false"
     //
   } // end environment 
   
