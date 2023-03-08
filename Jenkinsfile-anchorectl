@@ -42,8 +42,9 @@ pipeline {
       steps {
         sh """
           which docker
-          #which anchore-cli
-          #which /var/jenkins_home/anchorectl
+          ###
+          ### could additionally check for anchorectl here if you didn't want to fresh  
+          ### install it every time down below in the analyze stage
           """
       } // end steps
     } // end stage "Verify Tools"
@@ -83,7 +84,6 @@ pipeline {
         // queueing the image and will check results later.
         //
         sh """
-          echo ${PATH}
           ${HOME}/.local/bin/anchorectl image add --wait --no-auto-subscribe --dockerfile ./Dockerfile ${IMAGE}
           #
           ### the jenkins plugin will pull the evaluation and vulnerability output and 
