@@ -141,6 +141,10 @@ jobs:
         ### if we're going to do anything with subscriptions, we should add --wait to this anchorectl command
         ### otherwise, we can just queue it up and move on
 
+    - name: Clean Up Intermediate Image Scan
+      run: |
+        anchorectl image delete --force ${IMAGE_SHA}
+
 
     ###
     ###
