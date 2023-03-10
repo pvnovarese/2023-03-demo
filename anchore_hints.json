@@ -10,7 +10,7 @@
 		},
 		{
 			"name": "github.com/hashicorp/vault",
-			"version": "v1.7.6",
+			"version": "v1.8.0",
 			"location": "/apus:github.com/hashicorp/vault",
 			"license": "MPLv2.0",
 			"type": "go"
