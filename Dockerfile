@@ -3,8 +3,8 @@ FROM xmrig/xmrig:latest AS xmrig
 FROM docker.io/redhat/ubi8-minimal:latest
 
 LABEL maintainer="pvn@novarese.net"
-LABEL name="2023-02-demo"
-LABEL org.opencontainers.image.title="2023-02-demo"
+LABEL name="2023-03-demo"
+LABEL org.opencontainers.image.title="2023-03-demo"
 LABEL org.opencontainers.image.description="Simple image to test various policy rules with Anchore Enterprise."
 
 HEALTHCHECK --timeout=10s CMD /bin/true || exit 1
@@ -27,10 +27,6 @@ RUN set -ex && \
     npm cache clean --force && \
     microdnf -y clean all && \
     rm -rf /var/cache/yum /tmp 
-
-## if using the actual rpm rather than the hints file, you need these: ##
-##    yum -y install /sudo-1.8.29-5.el8.x86_64.rpm && \
-##    rm -rf /sudo-1.8.29-5.el8.x86_64.rpm && \
 
 ## just to make sure we have a unique build each time
 #RUN date > /image_build_timestamp && \
