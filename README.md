@@ -4,6 +4,7 @@
 [![Example Enterprise Workflow](https://github.com/pvnovarese/2023-03-demo/actions/workflows/example_enterprise.yaml/badge.svg)](https://github.com/pvnovarese/2023-03-demo/actions/workflows/example_enterprise.yaml)
 [![Example Local Scan/SBOM Workflow](https://github.com/pvnovarese/2023-03-demo/actions/workflows/example_local.yaml/badge.svg)](https://github.com/pvnovarese/2023-03-demo/actions/workflows/example_local.yaml)
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/pvnovarese/2023-03-demo/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/pvnovarese/2023-03-demo/tree/main)
+[![Codefresh build status]( https://g.codefresh.io/api/badges/pipeline/novarese/2023%2F2023-03-demo?type=cf-1&key=eyJhbGciOiJIUzI1NiJ9.NjBiNmI3NmU2OTg1ODM3ZmU2ODZiNmE5.WZIffzq3OQPvPXy6pn1TbA4z9fMsdlS1U_cliZXbxKg)]( https://g.codefresh.io/pipelines/edit/new/builds?id=640baaa2866842ffa25cc6d9&pipeline=2023-03-demo&projects=2023&projectId=639a01e7aeb99143fd42ec8c)
 
 Simple demo for Anchore Enterprise.
 
