@@ -1,8 +1,8 @@
 FROM docker.io/redhat/ubi9-minimal:latest
 
 LABEL maintainer="pvn@novarese.net"
-LABEL name="2023-02-demo-baseline"
-LABEL org.opencontainers.image.title="2023-02-demo-baseline"
+LABEL name="2023-03-demo-baseline"
+LABEL org.opencontainers.image.title="2023-03-demo-baseline"
 LABEL org.opencontainers.image.description="Simple image to test various policy rules with Anchore Enterprise."
 
 HEALTHCHECK --timeout=10s CMD /bin/true || exit 1
