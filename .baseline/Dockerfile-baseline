@@ -1,4 +1,4 @@
-FROM docker.io/redhat/ubi8-minimal:latest
+FROM docker.io/redhat/ubi9-minimal:latest
 
 LABEL maintainer="pvn@novarese.net"
 LABEL name="2023-02-demo-baseline"
