@@ -62,7 +62,6 @@ pipeline {
     
     stage('Analyze Image with anchorectl') {
       steps {
-        // anchore plugin for jenkins: https://www.jenkins.io/doc/pipeline/steps/anchore-container-scanner/
         //
         // first, install latest version of anchorectl 
         // (you could just install this into the jenkins build node at /usr/local/bin but for demo 
