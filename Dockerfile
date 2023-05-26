@@ -26,6 +26,7 @@ RUN set -ex && \
     npm install -g --cache /tmp/empty-cache debug chalk commander xmldom && \
     npm cache clean --force && \
     microdnf -y clean all && \
+    echo "trigger package verification for gzip" >> /usr/share/doc/gzip/TODO && \
     rm -rf /var/cache/yum /tmp 
 
 ## just to make sure we have a unique build each time
