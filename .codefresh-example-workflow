@@ -64,9 +64,7 @@ steps:
 
   test:
     title: "Scan with Anchore Enterprise"
-    ### this anchore-plugin image is pretty old and has anchore-cli only
-    #image: quay.io/codefreshplugins/anchore-plugin:latest 
-    image: docker.io/pvnovarese/anchore-tools:main
+    image: docker.io/pvnovarese/anchore-tools:latest
     environment:
       - ANCHORE_IMAGE=${{ANCHORE_IMAGE_REPO}}:${{ANCHORE_TEST_TAG}}
       ### uncomment the following line if you want to break the pipeline for policy violation (or set it as a project variable, whatever)
@@ -98,7 +96,7 @@ steps:
     
   queue:
     title: "Add Promoted Image to Anchore Queue"
-    image: docker.io/pvnovarese/anchore-tools:main
+    image: docker.io/pvnovarese/anchore-tools:latest
     environment:
       - ANCHORE_IMAGE=${{ANCHORE_IMAGE_REPO}}:${{ANCHORE_PROD_TAG}}
     commands:
