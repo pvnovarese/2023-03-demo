@@ -20,6 +20,7 @@ env:
   IMAGE_REGISTRY: ghcr.io
   ### if you want to gate on policy, change this to "true"
   ANCHORE_FAIL_ON_POLICY: false
+  ANCHORECTL_FAIL_BASED_ON_RESULTS: false
 
 jobs:
 
@@ -64,7 +65,7 @@ jobs:
     - name: Install CLI Tools
       run: |
         ### install anchorectl 
-        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.2.0
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.7.0
         export PATH="$HOME/.local/bin/:$PATH"
     
     ### this isn't really necessary (we'll bomb out on the next step anyway if the API isn't reachable), but is useful for debugging 
@@ -93,14 +94,14 @@ jobs:
     ### this isn't necessary unless you want to archive policy eval or break the pipeline on a violation
     #- name: Pull policy evaluation
     #  run: |      
-    #    ### If ANCHORE_FAIL_ON_POLICY is set, break the pipeline if there is a policy violation
-    #    set -o pipefail
-    #    if [ "$ANCHORE_FAIL_ON_POLICY" == "true" ] ; then 
-    #      anchorectl image check --detail --fail-based-on-results ${IMAGE_TEST} ; 
-    #    else 
-    #      anchorectl image check --detail ${IMAGE_TEST} ; 
-    #    fi    
-    #    ### again, if you want to keep an artifact of the policy evaluation, just pipe the image check output to "tee anchore-policy.txt" or similar
+    #    ### If ANCHORECTL_FAIL_BASED_ON_RESULTS: true is set (see up above 
+    #    ### in the "env" section), anchorectl will break here if there is a 
+    #    ### policy violation (or pass -f or --fail-based-on-results).
+    #    #
+    #    anchorectl image check --detail ${IMAGE_TEST} 
+    #    #
+    #    ### again, if you want to keep an artifact of the policy evaluation, 
+    #    ### just pipe the image check output to "tee anchore-policy.txt" or similar
         
         
 
