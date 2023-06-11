@@ -1,4 +1,12 @@
-name: Enterprise Demo Setup Workflow
+## This workflow is for setting up my personal demo instance 
+## of Anchore Enterprise, and shouldn't be used for general
+## scanning examples etc.
+## Most people should use the example_enterprise.yaml
+## (the "example enterprise workflow") instead.
+##
+## todo list:
+## 1) (possibly) use my own anchore-tools iamge instead of ubuntu 
+##    plus installing anchorectl
 
 on: 
   #schedule:
@@ -14,10 +22,10 @@ env:
   ANCHORECTL_URL: ${{ secrets.ANCHORECTL_URL }}
   IMAGE_REGISTRY: ghcr.io
   IMAGE_TAG: demo
-  ### if you want to gate on policy failures, set this to "true"
+  ### if you want to gate on policy, change this to "true"
+  ANCHORECTL_FAIL_BASED_ON_RESULTS: false
   ### since this particular workflow is specifically for setting up a demo, 
   ### we don't want this to be true.
-  ANCHORE_FAIL_ON_POLICY: false
 
 jobs:
 
@@ -59,7 +67,7 @@ jobs:
     - name: Install CLI Tools
       run: |
         ### install anchorectl 
-        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.6.0
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.7.0
         export PATH="$HOME/.local/bin/:$PATH"
     
     ### this isn't really necessary (we'll bomb out on the next step anyway if the API isn't reachable), but is useful for debugging 
@@ -80,13 +88,12 @@ jobs:
     #    # anchorectl image vuln ${IMAGE_DEV} | tee anchore-vuln.txt
     #- name: Pull policy evaluation
     #  run: |      
-    #    ### If ANCHORE_FAIL_ON_POLICY is set, break the pipeline if there is a policy violation
-    #    set -o pipefail
-    #    if [ "$ANCHORE_FAIL_ON_POLICY" == "true" ] ; then 
-    #      anchorectl image check --detail --fail-based-on-results ${IMAGE_DEV} ; 
-    #    else 
-    #      anchorectl image check --detail ${IMAGE_DEV} ; 
-    #    fi    
+    #    ### If ANCHORECTL_FAIL_BASED_ON_RESULTS: true is set (see up above 
+    #    ### in the "env" section), anchorectl will break here if there is a 
+    #    ### policy violation (or pass -f or --fail-based-on-results).
+    #    #
+    #    anchorectl image check --detail ${IMAGE_TEST} 
+    #    #
     #    ### again, if you want to keep an artifact of the policy evaluation, just pipe the image check output to "tee anchore-policy.txt" or similar
         
         
@@ -118,7 +125,7 @@ jobs:
     #- name: Install CLI Tools
     #  run: |
     #    ### if we want local sboms in SPDX/CycloneDX, we need syft (for now)
-    #    curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v0.59.0
+    #    curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v0.80.0
     #
     #- name: Generate SBOM 
     #  run: |
@@ -156,32 +163,32 @@ jobs:
     - name: Install CLI Tools
       run: |
         ### install anchorectl 
-        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.6.0
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.7.0
         export PATH="$HOME/.local/bin/:$PATH"
         
     - name: Add Iterated Image to Enterprise Queue
       run: | 
         anchorectl image add --force --no-auto-subscribe --wait --annotation build_tool=github --annotation build=iterated --annotation actor=${GITHUB_ACTOR} --dockerfile ./Dockerfile ${IMAGE}
         
-  Post-Scan-Tasks:  
-    needs: [Baseline-Scan, Iteration-Scan]
-    runs-on: ubuntu-latest
-    steps:
-    - name: "Set environmental variables"
-      run: |
-        echo "IMAGE=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${IMAGE_TAG}-${GITHUB_REF_NAME}" >> $GITHUB_ENV
-        
-    - name: Checkout Code
-      uses: actions/checkout@v3
-      
-    - name: Install CLI Tools
-      run: |
-        ### install syft (for local SPDX/CycloneDX sbom generation, this will be implemented directly in anchorctl in the future as well)
-        #curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v0.59.0
-        ### install anchorectl 
-        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.2.0
-        export PATH="$HOME/.local/bin/:$PATH"
-        
+  #Post-Scan-Tasks:  
+    #needs: [Baseline-Scan, Iteration-Scan]
+    #runs-on: ubuntu-latest
+    #steps:
+    #- name: "Set environmental variables"
+    #  run: |
+    #    echo "IMAGE=${IMAGE_REGISTRY}/${GITHUB_REPOSITORY}:${IMAGE_TAG}-${GITHUB_REF_NAME}" >> $GITHUB_ENV
+    #    
+    #- name: Checkout Code
+    #  uses: actions/checkout@v3
+    #  
+    #- name: Install CLI Tools
+    #  run: |
+    #    ### install syft (for local SPDX/CycloneDX sbom generation, this will be implemented directly in anchorctl in the future as well)
+    #    #curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v0.80.0
+    #    ### install anchorectl 
+    #    curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.7.0
+    #    export PATH="$HOME/.local/bin/:$PATH"
+    #    
     ### this isn't really necessary, some people want to archive this stuff
     #- name: Pull Vulnerability List
     #  run: |
@@ -198,14 +205,14 @@ jobs:
     #  run: |
     #    set -o pipefail
     #    anchorectl image check --fail-based-on-results --detail ${IMAGE} | tee anchore-policy.txt
-
+    #
     ### optional, if you want continuous re-evaluations
     ### still need anchore-cli for subscription operations (not yet in anchorectl 0.2.0)
     #- name: Activate Subscriptions
     #  run: |
     #    anchorectl -o json subscription list -k ${IMAGE} | jq -r '.[] | select (.subscriptionType == "policy_eval") | .subscriptionId' | xargs anchorectl subscription activate
     #    anchorectl -o json subscription list -k ${IMAGE} | jq -r '.[] | select (.subscriptionType == "vuln_update") | .subscriptionId' | xargs anchorectl subscription activate
-
+    #
     ### if you pulled vuln/policy reports and want to archive them:
     #- name: Archive Reports
     #  if: always()
