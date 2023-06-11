@@ -1,3 +1,5 @@
+name: Demo Setup
+
 ## This workflow is for setting up my personal demo instance 
 ## of Anchore Enterprise, and shouldn't be used for general
 ## scanning examples etc.
