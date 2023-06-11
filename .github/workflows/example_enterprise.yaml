@@ -19,7 +19,6 @@ env:
   ANCHORECTL_URL: ${{ secrets.ANCHORECTL_URL }}
   IMAGE_REGISTRY: ghcr.io
   ### if you want to gate on policy, change this to "true"
-  ANCHORE_FAIL_ON_POLICY: false
   ANCHORECTL_FAIL_BASED_ON_RESULTS: false
 
 jobs:
