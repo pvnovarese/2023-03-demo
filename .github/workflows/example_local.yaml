@@ -28,10 +28,8 @@ env:
   ANCHORECTL_PASSWORD: ${{ secrets.ANCHORECTL_PASSWORD }}
   ANCHORECTL_URL: ${{ secrets.ANCHORECTL_URL }}
   IMAGE_REGISTRY: ghcr.io
-  ### if you want to gate on policy failures, set these to "true"
-  ANCHORECTL_FAIL_BASED_ON_RESULTS: false
-  ANCHORE_FAIL_ON_POLICY: false
-        
+  ### if you want to gate on policy failures, set this to "true"
+  ANCHORECTL_FAIL_BASED_ON_RESULTS: false        
 
 
 jobs:
