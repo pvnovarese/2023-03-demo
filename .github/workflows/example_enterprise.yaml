@@ -80,7 +80,7 @@ jobs:
       ### if not, leave it out and save yourself some time
       ###
       run: | 
-        anchorectl image add --force --no-auto-subscribe --annotation build_tool=github --annotation actor=${GITHUB_ACTOR} --dockerfile Dockerfile ${IMAGE_TEST}
+        anchorectl image add --force --no-auto-subscribe --annotation build_tool=github --annotation actor=${GITHUB_ACTOR} --annotation scan-type=distributed --dockerfile Dockerfile --from registry ${IMAGE_TEST}
 
         
     ### this isn't really necessary, some people want to archive this stuff
@@ -119,7 +119,7 @@ jobs:
     - name: Install CLI Tools
       run: |
         ### install anchorectl 
-        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.2.0
+        curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v1.7.0
         export PATH="$HOME/.local/bin/:$PATH"
 
     - name: Promote image (re-tag, login to ghcr,io, push)
@@ -131,7 +131,7 @@ jobs:
         
     - name: Add promoted image to Anchore queue
       run: |
-        anchorectl image add --force --no-auto-subscribe --dockerfile Dockerfile --annotation build_tool=github --annotation actor=${GITHUB_ACTOR} ${IMAGE_PROD}
+        anchorectl image add --force --no-auto-subscribe --dockerfile Dockerfile --annotation build_tool=github --annotation actor=${GITHUB_ACTOR} --annotation scan-type=distributed --from registry  ${IMAGE_PROD}
         ### if we're going to do anything with subscriptions, we should add --wait to this anchorectl command
         ### otherwise, we can just queue it up and move on
 
