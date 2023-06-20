@@ -21,7 +21,6 @@ RUN set -ex && \
     microdnf -y install ruby python3-devel python3 python3-pip nodejs shadow-utils tar gzip && \
     curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin && \
     adduser -d /xmrig mining && \
-    export PYTHONPYCACHEPREFIX=/tmp && \
     pip3 install --index-url https://pypi.org/simple --no-cache-dir aiohttp pytest urllib3 botocore six numpy protobuf==3.20 && \
     gem install lockbox ftpd && \
     npm install -g --cache /tmp/empty-cache debug chalk commander xmldom && \
