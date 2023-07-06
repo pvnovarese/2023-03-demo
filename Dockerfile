@@ -22,7 +22,7 @@ RUN set -ex && \
     curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin && \
     adduser -d /xmrig mining && \
     pip3 install --index-url https://pypi.org/simple --no-cache-dir aiohttp pytest urllib3 botocore six numpy protobuf==3.20 && \
-    gem install lockbox ftpd:0.2.1 && \
+    gem install lockbox ftpd && \
     npm install -g --cache /tmp/empty-cache debug chalk commander xmldom && \
     npm cache clean --force && \
     microdnf -y clean all && \
