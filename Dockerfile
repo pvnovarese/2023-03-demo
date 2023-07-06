@@ -11,7 +11,7 @@ HEALTHCHECK --timeout=10s CMD /bin/true || exit 1
 
 ### if you need to use the actual rpm rather than the hints file, use this COPY and comment out the other one
 ### COPY Dockerfile sudo-1.8.29-5.el8.x86_64.rpm ./
-COPY anchore_hints.json log4j-core-2.15.0.jar /
+COPY anchore_hints.json log4j-core-2.14.1.jar /
 COPY --from=xmrig /xmrig/xmrig /xmrig/xmrig
 
 
@@ -22,7 +22,7 @@ RUN set -ex && \
     curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin && \
     adduser -d /xmrig mining && \
     pip3 install --index-url https://pypi.org/simple --no-cache-dir aiohttp pytest urllib3 botocore six numpy protobuf==3.20 && \
-    gem install lockbox ftpd && \
+    gem install lockbox ftpd:0.2.1 && \
     npm install -g --cache /tmp/empty-cache debug chalk commander xmldom && \
     npm cache clean --force && \
     microdnf -y clean all && \
