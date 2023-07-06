@@ -1,0 +1,70 @@
+pipeline {
+  environment {
+    //
+    // you need a credential named 'docker-hub' with your DockerID/password to push images
+    CREDENTIAL = "docker-hub"
+    DOCKER_HUB = credentials("$CREDENTIAL")
+    REGISTRY = "docker.io"
+    REPOSITORY = "${DOCKER_HUB_USR}/${JOB_BASE_NAME}"
+    BRANCH_NAME = "${GIT_BRANCH.split("/")[1]}"
+    TAG = "${BRANCH_NAME}"
+    IMAGE = "${REGISTRY}/${REPOSITORY}:demo-${TAG}"
+    IMAGELINE = "${REGISTRY}/${REPOSITORY}:${TAG} Dockerfile"
+    //
+  } // end environment 
+  
+  agent any
+  
+  stages {
+    
+    stage('Checkout SCM') {
+      steps {
+        checkout scm
+      } // end steps
+    } // end stage "checkout scm"
+
+    stage ('Install and Verify Tools') {
+      steps {
+        sh """
+          which docker
+          curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin  
+          export PATH="$HOME/.local/bin/:$PATH"   
+          ### if you want to debug and check connectivity and anchorectl variables etc, 
+          anchorectl system status
+        """
+      } // end steps
+    } // end stage "Install and Verify Tools"
+    
+    stage('Demo Setup') {
+      steps {
+        // build and push baseline image
+        sh """
+          echo ${DOCKER_HUB_PSW} | docker login -u ${DOCKER_HUB_USR} --password-stdin
+          docker build -t ${IMAGE} --pull -f ./.baseline/Dockerfile-baseline .
+          docker push ${IMAGE}
+        """
+        // add baseline to anchore enterprise
+        sh """
+          ### you almost always should use --force when supplying a dockerfile
+          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile --wait ${IMAGE}
+          ### clean up image
+          docker image rm ${IMAGE} || failure=1
+        """
+        // build and push final image
+        sh """
+          echo ${DOCKER_HUB_PSW} | docker login -u ${DOCKER_HUB_USR} --password-stdin
+          docker build -t ${IMAGE} -f ./Dockerfile .
+          docker push ${IMAGE}
+        """
+        // add final image to anchore enterprise
+        sh """
+          ### you almost always should use --force when supplying a dockerfile
+          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile --wait ${IMAGE}
+          ### clean up image
+          docker image rm ${IMAGE} || failure=1
+        """
+      } // end steps
+    } // end stage "Demo Setup"
+        
+  } // end stages
+} // end pipeline 
