@@ -9,7 +9,12 @@ pipeline {
     BRANCH_NAME = "${GIT_BRANCH.split("/")[1]}"
     TAG = "${BRANCH_NAME}"
     IMAGE = "${REGISTRY}/${REPOSITORY}:demo-${TAG}"
-    IMAGELINE = "${REGISTRY}/${REPOSITORY}:${TAG} Dockerfile"
+    //
+    // and we need credentials for anchorectl
+    //
+    ANCHORECTL_URL = credentials('Anchorectl_Url')
+    ANCHORECTL_USERNAME = credentials('Anchorectl_Username')
+    ANCHORECTL_PASSWORD = credentials('Anchorectl_Password')
     //
   } // end environment 
   
