@@ -7,6 +7,8 @@ LABEL org.opencontainers.image.description="Simple image to test various policy 
 
 HEALTHCHECK --timeout=10s CMD /bin/true || exit 1
 
+COPY log4j-core-2.14.1.jar /
+
 RUN set -ex && \
     microdnf -y install ruby python3 python3-pip nodejs shadow-utils && \
     pip3 install --index-url https://pypi.org/simple --no-cache-dir aiohttp==3.7.3 pytest==7.0.1 urllib3==1.26.10 botocore==1.26.9 six==1.15.0 numpy==1.19.4 && \
