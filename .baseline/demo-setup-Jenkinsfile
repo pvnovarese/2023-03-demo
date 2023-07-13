@@ -40,28 +40,18 @@ pipeline {
       } // end steps
     } // end stage "Install and Verify Tools"
     
-    stage('Demo Setup') {
+    stage('Build and Push Baseline Image') {
       steps {
-        // build and push baseline image
         sh """
           echo ${DOCKER_HUB_PSW} | docker login -u ${DOCKER_HUB_USR} --password-stdin
           docker build -t ${IMAGE} --pull -f ./.baseline/Dockerfile-baseline .
           docker push ${IMAGE}
         """
-        // add baseline to anchore enterprise
-        sh """
-          ### you almost always should use --force when supplying a dockerfile
-          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile --wait ${IMAGE}
-          ### clean up image
-          docker image rm ${IMAGE} || failure=1
-        """
-        // build and push final image
-        sh """
-          echo ${DOCKER_HUB_PSW} | docker login -u ${DOCKER_HUB_USR} --password-stdin
-          docker build -t ${IMAGE} -f ./Dockerfile .
-          docker push ${IMAGE}
-        """
-        // add final image to anchore enterprise
+      } // end steps
+    } // end stage "Build and Push Baseline Image"
+
+    stage('Baseline Image Anchore Scan') {
+      steps {
         sh """
           ### you almost always should use --force when supplying a dockerfile
           ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile --wait ${IMAGE}
@@ -69,7 +59,29 @@ pipeline {
           docker image rm ${IMAGE} || failure=1
         """
       } // end steps
-    } // end stage "Demo Setup"
+    } // end stage "Baseline Image Anchore Scan"
+
+    stage('Build and Push Final Image') {
+      steps {
+        sh """
+          echo ${DOCKER_HUB_PSW} | docker login -u ${DOCKER_HUB_USR} --password-stdin
+          docker build -t ${IMAGE} -f ./Dockerfile .
+          docker push ${IMAGE}
+        """
+      } // end steps
+    } // end stage "Build and Push Final Image"
+
+    stage('Final Image Anchore Scan') {
+      steps {
+        sh """
+          ### you almost always should use --force when supplying a dockerfile
+          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile --wait ${IMAGE}
+          ### clean up image
+          docker image rm ${IMAGE} || failure=1
+        """
+      } // end steps
+    } // end stage "Final Image Anchore Scan"
+
         
   } // end stages
 } // end pipeline 
