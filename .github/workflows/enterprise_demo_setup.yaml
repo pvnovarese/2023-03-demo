@@ -11,8 +11,8 @@ name: Demo Setup
 ##    plus installing anchorectl
 
 on: 
-  schedule:
-    - cron: '33 23 * * 5'
+  #schedule:
+  #  - cron: '33 23 * * 5'
   workflow_dispatch:
     inputs:
       mode:
